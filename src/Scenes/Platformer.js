@@ -11,7 +11,8 @@ class Platformer extends Phaser.Scene {
         this.physics.world.TILE_BIAS = 24;
         //this.JUMP_VELOCITY = -650;
         this.PARTICLE_VELOCITY = 50;
-        this.SCALE = 2.0;
+        this.SCALE = 3.0;
+        this.TILE_SIZE = 18;
     }
 
     preload() {
@@ -20,46 +21,85 @@ class Platformer extends Phaser.Scene {
     }
 
     create() {
+
         // Create a new tilemap game object which uses 18x18 pixel tiles, and is
         // 45 tiles wide and 25 tiles tall.
-        this.map = this.add.tilemap("platformer-level-1", 18, 18, 45, 25);
+        this.map = this.add.tilemap("platformer-level-1", 18, 18, 64, 16);
 
         // Add a tileset to the map
         // First parameter: name we gave the tileset in Tiled
         // Second parameter: key for the tilesheet (from this.load.image in Load.js)
-        this.tileset = this.map.addTilesetImage("kenny_tilemap_packed", "tilemap_tiles");
+        this.pixel_tileset = this.map.addTilesetImage("pixelplat_tilemap", "pixel_tilemap_tiles");
+        this.industry_tileset = this.map.addTilesetImage("industry_tilemap", "industry_tilemap_tiles");
 
         // Create a layer
-        this.groundLayer = this.map.createLayer("Ground-n-Platforms", this.tileset, 0, 0);
+
+        this.parallax2Layer = this.map.createLayer("Parallax2", [this.pixel_tileset, this.industry_tileset], 0, 0);
+        this.parallax1Layer = this.map.createLayer("Parallax1", [this.pixel_tileset, this.industry_tileset], 0, 0);
+        this.bgLayer = this.map.createLayer("BackGround", [this.pixel_tileset, this.industry_tileset], 16 * this.TILE_SIZE, 0);
+        this.groundLayer = this.map.createLayer("Ground", [this.pixel_tileset, this.industry_tileset], 0, 0);
+        this.lavaLayer = this.map.createLayer("Lava", [this.pixel_tileset, this.industry_tileset], 0, 0);
 
         // Make it collidable
-        this.groundLayer.setCollisionByProperty({
-            collides: true
-        });
+        //this.groundLayer.setCollisionByProperty({
+        //    collides: true
+        //});
+        this.groundLayer.setCollisionByExclusion([-1]);
+        //this.lavaLayer.setCollisionByExclusion([-1]);
 
         // Create coins from Objects layer in tilemap
         this.coins = this.map.createFromObjects("Objects", {
             name: "coin",
-            key: "tilemap_sheet",
+            key: "pixel_sheet",
             frame: 151
         });
 
+        this.coins.forEach(c => c.setDepth(2));
+
         this.spawns = this.map.createFromObjects("Objects", {
-            name: "flag",
-            key: "tilemap_sheet",
+            name: "spawn",
+            key: "pixel_sheet",
             frame: 111
         });
 
+        this.spawns.forEach(s => s.setDepth(0));
+
+        this.spikes = this.map.createFromObjects("Objects", {
+            name: "spike",
+            key: "pixel_sheet",
+            frame: 68
+        });
+
+        this.spikes.forEach(s => s.setDepth(2));
+
+        this.superspikes = this.map.createFromObjects("Objects", {
+            name: "super_spike",
+            key: "pixel_sheet",
+            frame: 69
+        });
+
+        this.superspikes.forEach(s => s.setDepth(2));
+
+        this.springs = this.map.createFromObjects("Objects", {
+            name: "spring",
+            key: "pixel_sheet",
+            frame: 108
+        });
+
+        this.springs.forEach(s => s.setDepth(2));
+
         this.powerUps = this.map.createFromObjects("Objects", {
             name: "mushroom",
-            key: "tilemap_sheet",
+            key: "pixel_sheet",
             frame: 128
         });
+
+        this.powerUps.forEach(p => p.setDepth(2));
 
         // Create animation for coins created from Object layer
         this.anims.create({
             key: 'coinAnim', // Animation key
-            frames: this.anims.generateFrameNumbers('tilemap_sheet', 
+            frames: this.anims.generateFrameNumbers('pixel_sheet', 
                 {start: 151, end: 152}
             ),
             duration: 250,
@@ -69,12 +109,22 @@ class Platformer extends Phaser.Scene {
 
         this.anims.create({
             key: 'spawnAnim', // Animation key
-            frames: this.anims.generateFrameNumbers('tilemap_sheet', 
+            frames: this.anims.generateFrameNumbers('pixel_sheet', 
                 {start: 111, end: 112}
             ),
             duration: 250,
             //frameRate: 10,  // Higher is faster
             repeat: -1      // Loop the animation indefinitely
+        });
+
+        this.anims.create({
+            key: 'springAnim', // Animation key
+            frames: this.anims.generateFrameNumbers('pixel_sheet', 
+                {start: 107, end: 108}
+            ),
+            duration: 50,
+            //frameRate: 10,  // Higher is faster
+            repeat: 0      // Loop the animation indefinitely
         });
 
         // Play the same animation for every memeber of the Object coins array
@@ -83,29 +133,94 @@ class Platformer extends Phaser.Scene {
 
         this.physics.world.enable(this.coins, Phaser.Physics.Arcade.STATIC_BODY);
         this.physics.world.enable(this.spawns, Phaser.Physics.Arcade.STATIC_BODY);
+        this.physics.world.enable(this.spikes, Phaser.Physics.Arcade.STATIC_BODY);
+        this.physics.world.enable(this.superspikes, Phaser.Physics.Arcade.STATIC_BODY);
         this.physics.world.enable(this.powerUps, Phaser.Physics.Arcade.STATIC_BODY);
+        this.physics.world.enable(this.springs, Phaser.Physics.Arcade.STATIC_BODY);
+
+        this.spikes.forEach(spike => {
+
+            const baseWidth = 8;
+            const baseHeight = 4;
+            const baseCenterX = 0;
+            const baseCenterY = spike.height / 4;
+
+            this.rotateHitbox(baseWidth, baseHeight, baseCenterX, baseCenterY, spike);
+        });
+
+        this.superspikes.forEach(spike => {
+
+            const baseWidth = 8;
+            const baseHeight = 4;
+            const baseCenterX = 0;
+            const baseCenterY = spike.height / 4;
+
+            this.rotateHitbox(baseWidth, baseHeight, baseCenterX, baseCenterY, spike);
+        });
+
+        this.springs.forEach(spring => {
+
+            const baseWidth = 12;
+            const baseHeight = 8;
+            const baseCenterX = 0;
+            const baseCenterY = (spring.height - (baseHeight + 12)) / 2;
+
+            this.rotateHitbox(baseWidth, baseHeight, baseCenterX, baseCenterY, spring);
+        });
 
         // Create a Phaser group out of the array this.coins
         // This will be used for collision detection below.
         this.coinGroup = this.add.group(this.coins);
         this.spawnGroup = this.add.group(this.spawns);
+        this.spikeGroup = this.add.group(this.spikes);
+        this.superspikeGroup = this.add.group(this.superspikes);
         this.powerUpsGroup = this.add.group(this.powerUps);
+        this.springGroup = this.add.group(this.springs);
 
-        //this.spawn = this.spawnGroup.getChildren()[0]; // get the first spawn point (there's only one in this level)
-        //this.start = {x: this.spawn.x, y: this.spawn.y};
+        this.spawn = this.spawnGroup.getChildren()[0]; // get the first spawn point (there's only one in this level)
+        console.log(this.spawn);
+        this.start = {x: this.spawn.x, y: this.spawn.y};
 
         // set up Phaser-provided cursor key input
-        cursors = this.input.keyboard.createCursorKeys();
+        this.cursors = {};
+        this.cursors.left = this.input.keyboard.addKey('A');
+        this.cursors.right = this.input.keyboard.addKey('D');
+        this.cursors.up = this.input.keyboard.addKey('W');
+        this.cursors.down = this.input.keyboard.addKey('S');
 
-        this.altJump = this.input.keyboard.addKey('SPACE');
+        this.cursors.jump = this.input.keyboard.addKey('SPACE');
+        this.cursors.twirl = this.input.keyboard.addKey('PERIOD');
+        this.cursors.dash = this.input.keyboard.addKey('COMMA');
+        this.cursors.spin = this.input.keyboard.addKey('L');
+
         this.rKey = this.input.keyboard.addKey('R');
+
+        this.prevPadState = { jump: false, twirl: false, dash: false, spin: false };
+        this.padJumpJustPressed = false;
+        this.padTwirlJustPressed = false;
+        this.padDashJustPressed = false;
+        this.padSpinJustPressed = false;
+
+        this.padJumpHeld = false;
+        this.padSpinHeld = false;
 
         // set up player avatar
         //my.sprite.player = this.physics.add.sprite(30, 345, "platformer_characters", "tile_0000.png");
-        my.sprite.player = new Player(this, 30, 345, "platformer_characters", "tile_0000.png", cursors, this.altJump);
+        my.sprite.player = new Player(this, this.start.x, this.start.y, "platformer_characters", "tile_0000.png", this.cursors);
+        my.sprite.player.setDepth(1);
 
         // Enable collision handling
         this.physics.add.collider(my.sprite.player, this.groundLayer);
+
+        this.physics.add.overlap(my.sprite.player, this.lavaLayer, (obj1, obj2) => {
+
+            my.sprite.player.isRespawning = true;
+            my.sprite.player.setPosition(this.start.x, this.start.y);
+            my.sprite.player.setVelocity(0,0);
+
+        }, (obj1, obj2) => {
+            return obj2.index !== -1; // Ensures no empty collisions are getting fired
+        });
         
         // Add interaction for coins with coin callback
         this.physics.add.overlap(my.sprite.player, this.coinGroup, (obj1, obj2) => {
@@ -114,6 +229,26 @@ class Platformer extends Phaser.Scene {
 
         this.physics.add.overlap(my.sprite.player, this.spawnGroup, (obj1, obj2) => {
             this.start = {x: obj2.x, y: obj2.y}; // update spawn point to current flag position
+        });
+
+        this.physics.add.overlap(my.sprite.player, this.spikeGroup, (obj1, obj2) => {
+            
+            const playerBottom = my.sprite.player.body.y + my.sprite.player.body.height;
+            const spikeTop = obj2.body.y;
+
+            const aboveSpike = playerBottom <= spikeTop + 4;
+
+            if(my.sprite.player.isSpin && aboveSpike){
+                my.sprite.player.body.velocity.y = my.sprite.player.JUMP_VELOCITY * my.sprite.player.SPIN_MULTIPLIER;
+            } else {
+                my.sprite.player.setPosition(this.start.x, this.start.y);
+                my.sprite.player.setVelocity(0,0);
+            }
+        });
+
+        this.physics.add.overlap(my.sprite.player, this.superspikeGroup, (obj1, obj2) => {
+            my.sprite.player.setPosition(this.start.x, this.start.y);
+            my.sprite.player.setVelocity(0,0);
         });
 
         // Handle collision detection with power-ups
@@ -129,10 +264,31 @@ class Platformer extends Phaser.Scene {
             });
         });
 
+        this.physics.add.overlap(my.sprite.player, this.springGroup, (obj1, obj2) => {
+
+            const SPRING_FORCE = 500;
+
+            let angle = Phaser.Math.DegToRad(obj2.angle - 90);
+
+            let cos = Math.cos(angle);
+            let sin = Math.sin(angle);
+
+            my.sprite.player.body.setVelocity(cos * SPRING_FORCE, sin * SPRING_FORCE);
+            my.sprite.player.isDash = true;
+
+            this.anims.play('springAnim', obj2);
+            //my.sprite.player.setVelocity(,0);
+        });
+
         // debug key listener (assigned to D key)
-        this.input.keyboard.on('keydown-D', () => {
-            this.physics.world.drawDebug = this.physics.world.drawDebug ? false : true
-            this.physics.world.debugGraphic.clear()
+        this.input.keyboard.on('keydown-CTRL', () => {
+            this.physics.world.drawDebug = !this.physics.world.drawDebug;
+            if(this.physics.world.debugGraphic){
+                this.physics.world.debugGraphic.clear();
+            }
+            if (this.physics.world.drawDebug){
+                this.physics.world.createDebugGraphic();
+            }
         }, this);
 
         // Simple camera to follow player
@@ -153,10 +309,67 @@ class Platformer extends Phaser.Scene {
         let dt = delta / 1000;
         //let my = this.my;
 
+        const pad = this.input.gamepad.getPad(0);
+
+        if (pad) {
+            const rawX = pad.leftStick.x;
+            const rawY = pad.leftStick.y;
+            const DEAD_ZONE = 0.35;
+
+            my.sprite.player.stickX = Math.abs(rawX) > DEAD_ZONE ? rawX : 0;
+            my.sprite.player.stickY = Math.abs(rawY) > DEAD_ZONE ? rawY : 0;
+
+            //this.cursors.left.isDown = this.cursors.left.isDown || stickX < -DEAD_ZONE;
+            //this.cursors.right.isDown = this.cursors.right.isDown || stickX > DEAD_ZONE;
+            //this.cursors.up.isDown = this.cursors.up.isDown || stickY < -DEAD_ZONE;
+            //this.cursors.down.isDown = this.cursors.down.isDown || stickY > DEAD_ZONE;
+
+            //this.cursors.jump.isDown = this.cursors.jump.isDown || pad.buttons[0].pressed;
+            //this.cursors.spin.isDown = this.cursors.spin.isDown || pad.buttons[5].pressed;
+            //this.cursors.dash.isDown = this.cursors.dash.isDown || pad.buttons[7].pressed;
+        
+            const jumpPressed = pad.buttons[0].pressed;
+            const twirlPressed = pad.buttons[5].pressed;
+            const dashPressed = pad.buttons[2].pressed;
+            const spinPressed = pad.buttons[7].pressed;
+
+            this.padJumpJustPressed = jumpPressed && !this.prevPadState.jump;
+            this.padTwirlJustPressed = twirlPressed && !this.prevPadState.twirl;
+            this.padDashJustPressed = dashPressed && !this.prevPadState.dash;
+            this.padSpinJustPressed = spinPressed && !this.prevPadState.spin;
+
+            this.padJumpHeld = jumpPressed;
+            this.padSpinHeld = spinPressed;
+            
+            this.prevPadState = { jump: jumpPressed, twirl: twirlPressed, dash: dashPressed, spin: spinPressed};
+        }
+
         my.sprite.player.update(time, delta);
 
         if(Phaser.Input.Keyboard.JustDown(this.rKey)) {
             this.scene.restart();
         }
+    }
+
+    rotateHitbox(baseWidth, baseHeight, baseCenterX, baseCenterY, object){
+
+        const angle = Phaser.Math.DegToRad(Math.round(object.angle));
+
+        const centerX = object.width / 2;
+        const centerY = object.height / 2;
+
+        const cos = Math.cos(angle);
+        const sin = Math.sin(angle);
+
+        const rotatedW = baseWidth * Math.abs(cos) + baseHeight * Math.abs(sin);
+        const rotatedH = baseWidth * Math.abs(sin) + baseHeight * Math.abs(cos);
+        const rotatedCenterX = baseCenterX * cos - baseCenterY * sin;
+        const rotatedCenterY = baseCenterX * sin + baseCenterY * cos;
+
+        const offsetX = centerX + rotatedCenterX - rotatedW / 2;
+        const offsetY = centerY + rotatedCenterY - rotatedH / 2;
+
+        object.body.setSize(rotatedW, rotatedH);
+        object.body.setOffset(offsetX, offsetY);
     }
 }

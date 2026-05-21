@@ -16,6 +16,9 @@ let config = {
     render: {
         pixelArt: true  // prevent pixel art from getting blurred when scaled
     },
+    input: {
+        gamepad: true,
+    },
     physics: {
         default: 'arcade',
         arcade: {

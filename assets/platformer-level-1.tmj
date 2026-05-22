@@ -2076,6 +2076,19 @@
                  "width":18,
                  "x":1044,
                  "y":225
+                }, 
+                {
+                 "gid":264,
+                 "height":18,
+                 "id":317,
+                 "name":"coin",
+                 "opacity":1,
+                 "rotation":0,
+                 "type":"",
+                 "visible":true,
+                 "width":18,
+                 "x":1053,
+                 "y":153
                 }],
          "opacity":1,
          "type":"objectgroup",
@@ -2332,7 +2345,7 @@
          "y":0
         }],
  "nextlayerid":9,
- "nextobjectid":317,
+ "nextobjectid":318,
  "orientation":"orthogonal",
  "renderorder":"right-down",
  "tiledversion":"1.12.1",

@@ -25,6 +25,7 @@ class Load extends Phaser.Scene {
 
         this.load.tilemapTiledJSON("platformer-level-1", "platformer-level-1.tmj");   // Tilemap in JSON
 
+        this.load.multiatlas("kenny-particles", "kenny-particles.json");
     }
 
     create() {
@@ -67,8 +68,16 @@ class Load extends Phaser.Scene {
             ],
         });
 
+        //this.params = {
+        //    frequency: 100,
+        //    lifespan: 2000,
+        //    quantity: 1,
+        ///    speed: 200,
+        //    emitting: true
+        //};
+
          // ...and pass to the next Scene
-         this.scene.start("platformerScene");
+        this.scene.start("platformerScene", {vfx: this.vfx});
     }
 
     // Never get here since a new scene is started in create()

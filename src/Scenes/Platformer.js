@@ -3,7 +3,7 @@ class Platformer extends Phaser.Scene {
         super("platformerScene");
     }
 
-    init() {
+    init(data) {
         // variables and settings
         //this.ACCELERATION = 400;
         //this.DRAG = 1500;    // DRAG < ACCELERATION = icy slide
@@ -11,9 +11,11 @@ class Platformer extends Phaser.Scene {
         this.physics.world.TILE_BIAS = 24;
         //this.JUMP_VELOCITY = -650;
         this.PARTICLE_VELOCITY = 50;
-        this.SCALE = 3.0;
+        this.SCALE = 4.0;
         this.TILE_SIZE = 18;
-        this.canDie = true;
+        this.canDie = false;
+
+        //this.vfx = data.vfx || {};
     }
 
     //preload() {
@@ -21,11 +23,52 @@ class Platformer extends Phaser.Scene {
     //    this.load.scenePlugin('AnimatedTiles', './lib/AnimatedTiles.js', 'animatedTiles', 'animatedTiles');
     //}
 
+    createParticles() {
+
+        this.vfx = {};
+
+        // Create emitter at center
+        this.vfx.coin = this.add.particles(0, 0, 'kenny-particles', {
+            frame: 'star_07.png',
+            speed: { min: 10, max: 50 },
+            scale: { start: 0.05, end: 0.025 },
+            alpha: { start: 1, end: 0 },
+            angle: { min: 0, max: 360 },
+            lifespan: 2000,
+            frequency: -1,
+            quantity: 10,
+            blendMode: 'NORMAL',
+        });
+
+        this.vfx.coin.setDepth(3);
+        //this.vfx.coin.setScale(0.1);
+
+        this.vfx.bgParticles = this.add.particles(0, 0, 'kenny-particles', {
+            frame: 'star_01.png',
+            //speed: { min: 10, max: 50 },
+            speed: (Math.random() - 0.5) * 5,
+            scaleX: { start: 2, end: 0.4 },
+            scaleY: { start: 0.25, end: 0.05 },
+            alpha: { start: 1, end: 0 },
+            angle: { min: 0, max: 360 },
+            rotation: {min: -360, max: 360},
+            quantity: 1,
+            lifespan: 2000,
+            frequency: 100,
+            blendMode: 'NORMAL',
+        });
+
+        this.vfx.bgParticles.setDepth(-5);
+        //this.vfx.bgParticles.pause();
+    }
+
     create() {
+
+        this.createParticles();
 
         // Create a new tilemap game object which uses 18x18 pixel tiles, and is
         // 45 tiles wide and 25 tiles tall.
-        this.map = this.add.tilemap("platformer-level-1", 18, 18, 64, 16);
+        this.map = this.add.tilemap("platformer-level-1", 18, 18, 80, 16);
 
         // Add a tileset to the map
         // First parameter: name we gave the tileset in Tiled
@@ -45,6 +88,9 @@ class Platformer extends Phaser.Scene {
         this.parallaxify(this.parallax1Layer, 0.5, 1.0, 16 * this.TILE_SIZE, 0, 0.875, 0.875);
         this.parallaxify(this.lavaLayer, 1.25, 1.0, -6 * this.TILE_SIZE, -4 *this.TILE_SIZE, 1.25, 1.25);
         //console.log(this.lavaLayer.getPosition());
+
+        //this.parallax2Layer.setTint(0x444444);
+        //this.parallax1Layer.setTint(0x888888);
 
         // Make it collidable
         //this.groundLayer.setCollisionByProperty({
@@ -230,6 +276,7 @@ class Platformer extends Phaser.Scene {
         
         // Add interaction for coins with coin callback
         this.physics.add.overlap(my.sprite.player, this.coinGroup, (obj1, obj2) => {
+            this.vfx.coin.emitParticleAt(obj2.x, obj2.y);
             obj2.destroy(); // remove coin on overlap
         });
 
@@ -306,6 +353,16 @@ class Platformer extends Phaser.Scene {
         this.cameras.main.setDeadzone(50, 50);
         this.cameras.main.setZoom(this.SCALE);
         
+        const cam = this.cameras.main;
+        const camW = cam.width / cam.zoom;
+        const camH = cam.height / cam.zoom;
+
+        //this.vfx.bgparticles.clearEmitZones();
+        this.vfx.bgParticles.addEmitZone({ 
+            type: 'random', 
+            source: new Phaser.Geom.Rectangle(-camW/2, -camH/2, camW, camH), 
+        });
+
         this.map.layers.forEach(layerData => {
             layerData.data.forEach(row => {
                 row.forEach((tile, i) => {
@@ -350,7 +407,7 @@ class Platformer extends Phaser.Scene {
             const jumpPressed = pad.buttons[0].pressed;
             const twirlPressed = pad.buttons[5].pressed;
             const dashPressed = pad.buttons[2].pressed;
-            const spinPressed = pad.buttons[7].pressed;
+            const spinPressed = pad.buttons[4].pressed; // 7
 
             this.padJumpJustPressed = jumpPressed && !this.prevPadState.jump;
             this.padTwirlJustPressed = twirlPressed && !this.prevPadState.twirl;
@@ -362,6 +419,9 @@ class Platformer extends Phaser.Scene {
             
             this.prevPadState = { jump: jumpPressed, twirl: twirlPressed, dash: dashPressed, spin: spinPressed};
         }
+
+        const cam = this.cameras.main;
+        this.vfx.bgParticles.setPosition(cam.scrollX + cam.width / 2, cam.scrollY + cam.height / 2);
 
         my.sprite.player.update(time, delta);
 

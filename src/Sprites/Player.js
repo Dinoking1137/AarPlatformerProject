@@ -75,7 +75,7 @@ class Player extends Phaser.Physics.Arcade.Sprite {
         const dashJustDown = Phaser.Input.Keyboard.JustDown(this.cursors.dash) || this.scene.padDashJustPressed;
         this.isSpin = this.cursors.spin.isDown || this.scene.padSpinHeld;
 
-        //if (this.isSpin) console.log("IS SPIN");
+        if (this.isSpin) console.log("IS SPIN");
 
         let inputX = 0;
         if (this.cursors.left.isDown) inputX -= 1;

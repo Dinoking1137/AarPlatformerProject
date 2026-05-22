@@ -13,7 +13,7 @@ class Platformer extends Phaser.Scene {
         this.PARTICLE_VELOCITY = 50;
         this.SCALE = 4.0;
         this.TILE_SIZE = 18;
-        this.canDie = false;
+        this.canDie = true;
 
         //this.vfx = data.vfx || {};
     }

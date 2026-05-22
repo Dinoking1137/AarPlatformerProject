@@ -13,12 +13,13 @@ class Platformer extends Phaser.Scene {
         this.PARTICLE_VELOCITY = 50;
         this.SCALE = 3.0;
         this.TILE_SIZE = 18;
+        this.canDie = true;
     }
 
-    preload() {
-        // Load the animated tiles plugin
-        this.load.scenePlugin('AnimatedTiles', './lib/AnimatedTiles.js', 'animatedTiles', 'animatedTiles');
-    }
+    //preload() {
+    //    // Load the animated tiles plugin
+    //    this.load.scenePlugin('AnimatedTiles', './lib/AnimatedTiles.js', 'animatedTiles', 'animatedTiles');
+    //}
 
     create() {
 
@@ -36,9 +37,14 @@ class Platformer extends Phaser.Scene {
 
         this.parallax2Layer = this.map.createLayer("Parallax2", [this.pixel_tileset, this.industry_tileset], 0, 0);
         this.parallax1Layer = this.map.createLayer("Parallax1", [this.pixel_tileset, this.industry_tileset], 0, 0);
-        this.bgLayer = this.map.createLayer("BackGround", [this.pixel_tileset, this.industry_tileset], 16 * this.TILE_SIZE, 0);
+        this.bgLayer = this.map.createLayer("BackGround", [this.pixel_tileset, this.industry_tileset], 0, 0); //16 * this.TILE_SIZE
         this.groundLayer = this.map.createLayer("Ground", [this.pixel_tileset, this.industry_tileset], 0, 0);
         this.lavaLayer = this.map.createLayer("Lava", [this.pixel_tileset, this.industry_tileset], 0, 0);
+
+        this.parallaxify(this.parallax2Layer, 0.25, 1.0, 16 * this.TILE_SIZE, 0, 0.75, 0.75);
+        this.parallaxify(this.parallax1Layer, 0.5, 1.0, 16 * this.TILE_SIZE, 0, 0.875, 0.875);
+        this.parallaxify(this.lavaLayer, 1.25, 1.0, -6 * this.TILE_SIZE, -4 *this.TILE_SIZE, 1.25, 1.25);
+        //console.log(this.lavaLayer.getPosition());
 
         // Make it collidable
         //this.groundLayer.setCollisionByProperty({
@@ -233,6 +239,8 @@ class Platformer extends Phaser.Scene {
 
         this.physics.add.overlap(my.sprite.player, this.spikeGroup, (obj1, obj2) => {
             
+            if(!this.canDie) return;
+
             const playerBottom = my.sprite.player.body.y + my.sprite.player.body.height;
             const spikeTop = obj2.body.y;
 
@@ -247,6 +255,7 @@ class Platformer extends Phaser.Scene {
         });
 
         this.physics.add.overlap(my.sprite.player, this.superspikeGroup, (obj1, obj2) => {
+            if(!this.canDie) return;
             my.sprite.player.setPosition(this.start.x, this.start.y);
             my.sprite.player.setVelocity(0,0);
         });
@@ -297,6 +306,16 @@ class Platformer extends Phaser.Scene {
         this.cameras.main.setDeadzone(50, 50);
         this.cameras.main.setZoom(this.SCALE);
         
+        this.map.layers.forEach(layerData => {
+            layerData.data.forEach(row => {
+                row.forEach((tile, i) => {
+                    if(tile === null){
+                        row[i] = new Phaser.Tilemaps.Tile(layerData, -1, 0, 0, this.map.tileWidth, this.map.tileHeight, this.map.tileWidth, this.map.tileHeight);
+                    }
+                });
+            });
+        });
+
         // Initialize the animated tiles plugin
         // This line needs to come *after* any line which creates a tilemap layer.
         // Putting this at the end of create() is a safe place
@@ -371,5 +390,11 @@ class Platformer extends Phaser.Scene {
 
         object.body.setSize(rotatedW, rotatedH);
         object.body.setOffset(offsetX, offsetY);
+    }
+
+    parallaxify(layer, ratioX, ratioY, positionX = 0, positionY = 0, scaleX = 1, scaleY = 1){
+        layer.setScrollFactor(ratioX, ratioY);
+        layer.setScale(scaleX, scaleY);
+        layer.setPosition(positionX, positionY);
     }
 }

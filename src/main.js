@@ -19,6 +19,13 @@ let config = {
     input: {
         gamepad: true,
     },
+    plugins: {
+        scene:[{
+            key: 'AnimatedTiles',
+            plugin: AnimatedTiles,
+            mapping: 'animatedTiles'
+        }]
+    },
     physics: {
         default: 'arcade',
         arcade: {

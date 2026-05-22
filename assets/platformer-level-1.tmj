@@ -428,15 +428,15 @@
                  "x":32,
                  "y":0
                 }],
-         "height":32,
+         "height":16,
          "id":3,
          "name":"BackGround",
          "opacity":1,
-         "startx":0,
+         "startx":16,
          "starty":0,
          "type":"tilelayer",
          "visible":true,
-         "width":80,
+         "width":32,
          "x":0,
          "y":0
         }, 
@@ -455,8 +455,8 @@
                  "type":"",
                  "visible":true,
                  "width":18,
-                 "x":839,
-                 "y":127.333333333333
+                 "x":54,
+                 "y":234
                 }, 
                 {
                  "gid":220,
